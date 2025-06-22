@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - local_plugins/sms_advanced/sms_advanced-1.1.0/**
+    - local_plugins/sms_advanced/test/**
+    - local_plugins/sms_advanced/example/**
+  errors:
+    unused_import: ignore # Suppress for login_screen.dart
+
+linter:
+  rules:
+    # Disable some rules for local plugins that we can't easily modify
+    constant_identifier_names: false
+    unnecessary_getters_setters: false
+    avoid_print: false
