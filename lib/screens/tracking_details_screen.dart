@@ -5,6 +5,8 @@ import '../models/agent.dart'; // Added missing import
 import '../models/parcel.dart';
 import '../services/database_service.dart';
 import '../services/sms_service.dart';
+import 'qr_display_screen.dart';
+import 'photo_signature_viewer_screen.dart';
 
 class TrackingDetailsScreen extends StatefulWidget {
   final String trackingNumber;
@@ -78,6 +80,18 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
           createdAt: parcel.createdAt,
           receivedBy: currentAgent.id,
           deliveredBy: parcel.deliveredBy,
+          // Payment fields
+          paymentMethod: parcel.paymentMethod,
+          paymentStatus: parcel.paymentStatus,
+          paymentReference: parcel.paymentReference,
+          // Delivery scheduling fields
+          preferredDeliveryDate: parcel.preferredDeliveryDate,
+          preferredDeliveryTime: parcel.preferredDeliveryTime,
+          deliveryInstructions: parcel.deliveryInstructions,
+          // Photo proof fields
+          pickupPhotoPath: parcel.pickupPhotoPath,
+          deliveryPhotoPath: parcel.deliveryPhotoPath,
+          signaturePath: parcel.signaturePath,
         );
         await dbService.updateParcel(updatedParcel);
         setState(() {
@@ -99,6 +113,18 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
           createdAt: parcel.createdAt,
           receivedBy: parcel.receivedBy,
           deliveredBy: currentAgent.id, // Set deliveredBy to current agent
+          // Payment fields
+          paymentMethod: parcel.paymentMethod,
+          paymentStatus: parcel.paymentStatus,
+          paymentReference: parcel.paymentReference,
+          // Delivery scheduling fields
+          preferredDeliveryDate: parcel.preferredDeliveryDate,
+          preferredDeliveryTime: parcel.preferredDeliveryTime,
+          deliveryInstructions: parcel.deliveryInstructions,
+          // Photo proof fields
+          pickupPhotoPath: parcel.pickupPhotoPath,
+          deliveryPhotoPath: parcel.deliveryPhotoPath,
+          signaturePath: parcel.signaturePath,
         );
         await dbService.updateParcel(updatedParcel);
         setState(() {
@@ -211,6 +237,43 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
                           ],
                           const SizedBox(height: 8),
                           Text('Created At: ${_parcel!.createdAt}'),
+
+                          const SizedBox(height: 24),
+
+                          // Action buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => QRDisplayScreen(parcel: _parcel!),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.qr_code),
+                                  label: const Text('View QR Code'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PhotoSignatureViewerScreen(parcel: _parcel!),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.photo_camera),
+                                  label: const Text('View Proof'),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
       ),

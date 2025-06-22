@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 import '../models/agent.dart';
 import '../models/parcel.dart';
 import '../services/database_service.dart';
+import '../services/payment_service.dart';
 
 class ParcelFormScreen extends StatefulWidget {
   final Agent agent;
@@ -23,9 +25,22 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
   final _fromLocationController = TextEditingController();
   final _toLocationController = TextEditingController();
   final _amountController = TextEditingController();
+  final _deliveryInstructionsController = TextEditingController();
+
   String _trackingNumber = '';
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Payment fields
+  String _paymentMethod = 'cash';
+  String _paymentStatus = 'pending';
+  String? _paymentReference;
+
+  // Delivery scheduling fields
+  DateTime? _preferredDeliveryDate;
+  TimeOfDay? _preferredDeliveryTime;
+
+  final PaymentService _paymentService = PaymentService();
 
   @override
   void initState() {
@@ -64,6 +79,22 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
           throw Exception('Invalid amount. Please enter a positive number.');
         }
 
+        // Process mobile money payment if selected
+        if (_paymentMethod == 'mobile_money') {
+          final paymentRef = await _paymentService.processMobileMoneyPayment(
+            customerPhone: _senderPhoneController.text.trim(),
+            amount: amount,
+            trackingNumber: _trackingNumber,
+          );
+
+          if (paymentRef != null) {
+            _paymentReference = paymentRef;
+            _paymentStatus = 'pending';
+          } else {
+            throw Exception('Failed to initiate mobile money payment. Please try again.');
+          }
+        }
+
         final parcel = Parcel(
           id: const Uuid().v4(),
           senderName: _senderNameController.text.trim(),
@@ -79,6 +110,18 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
           createdAt: DateTime.now().toIso8601String(),
           receivedBy: null,
           deliveredBy: null,
+          // Payment fields
+          paymentMethod: _paymentMethod,
+          paymentStatus: _paymentStatus,
+          paymentReference: _paymentReference,
+          // Delivery scheduling fields
+          preferredDeliveryDate: _preferredDeliveryDate?.toIso8601String(),
+          preferredDeliveryTime: _preferredDeliveryTime != null
+              ? '${_preferredDeliveryTime!.hour.toString().padLeft(2, '0')}:${_preferredDeliveryTime!.minute.toString().padLeft(2, '0')}'
+              : null,
+          deliveryInstructions: _deliveryInstructionsController.text.trim().isEmpty
+              ? null
+              : _deliveryInstructionsController.text.trim(),
         );
 
         await DatabaseService().insertParcel(parcel);
@@ -103,6 +146,32 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
     }
   }
 
+  Future<void> _selectDeliveryDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _preferredDeliveryDate ?? DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (picked != null && picked != _preferredDeliveryDate) {
+      setState(() {
+        _preferredDeliveryDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectDeliveryTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _preferredDeliveryTime ?? TimeOfDay.now(),
+    );
+    if (picked != null && picked != _preferredDeliveryTime) {
+      setState(() {
+        _preferredDeliveryTime = picked;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _senderNameController.dispose();
@@ -112,6 +181,7 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
     _fromLocationController.dispose();
     _toLocationController.dispose();
     _amountController.dispose();
+    _deliveryInstructionsController.dispose();
     super.dispose();
   }
 
@@ -185,7 +255,140 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+
+                // Payment Method Section
+                const Text(
+                  'Payment Method',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Cash on Delivery'),
+                        value: 'cash',
+                        groupValue: _paymentMethod,
+                        onChanged: (value) {
+                          setState(() {
+                            _paymentMethod = value!;
+                            _paymentStatus = 'pending';
+                            _paymentReference = null;
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Mobile Money'),
+                        value: 'mobile_money',
+                        groupValue: _paymentMethod,
+                        onChanged: (value) {
+                          setState(() {
+                            _paymentMethod = value!;
+                            _paymentStatus = 'pending';
+                            _paymentReference = null;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (_paymentMethod == 'mobile_money') ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '📱 Mobile Money Payment',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 4),
+                        Text('Send payment to: 0625661245'),
+                        Text('Name: BENARD PAUL'),
+                        Text('💡 Payment instructions will be sent via SMS'),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Delivery Scheduling Section
+                const Text(
+                  'Delivery Preferences (Optional)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: ListTile(
+                        title: Text(_preferredDeliveryDate == null
+                            ? 'Select Delivery Date'
+                            : DateFormat('MMM dd, yyyy').format(_preferredDeliveryDate!)),
+                        leading: const Icon(Icons.calendar_today),
+                        onTap: _selectDeliveryDate,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    if (_preferredDeliveryDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _preferredDeliveryDate = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: ListTile(
+                        title: Text(_preferredDeliveryTime == null
+                            ? 'Select Delivery Time'
+                            : _preferredDeliveryTime!.format(context)),
+                        leading: const Icon(Icons.access_time),
+                        onTap: _selectDeliveryTime,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    if (_preferredDeliveryTime != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _preferredDeliveryTime = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _deliveryInstructionsController,
+                  decoration: const InputDecoration(
+                    labelText: 'Delivery Instructions (Optional)',
+                    hintText: 'e.g., Call before delivery, Leave at gate, etc.',
+                  ),
+                  maxLines: 2,
+                ),
+
+                const SizedBox(height: 24),
                 Text('Tracking Number: $_trackingNumber'),
                 const SizedBox(height: 16),
                 _isLoading

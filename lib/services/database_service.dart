@@ -24,7 +24,7 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     return await openDatabase(
       path.join(dbPath, 'zipbus.db'),
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE agents (
@@ -53,7 +53,16 @@ class DatabaseService {
             createdBy TEXT,
             createdAt TEXT,
             receivedBy TEXT,
-            deliveredBy TEXT
+            deliveredBy TEXT,
+            paymentMethod TEXT DEFAULT 'cash',
+            paymentStatus TEXT DEFAULT 'pending',
+            paymentReference TEXT,
+            preferredDeliveryDate TEXT,
+            preferredDeliveryTime TEXT,
+            deliveryInstructions TEXT,
+            pickupPhotoPath TEXT,
+            deliveryPhotoPath TEXT,
+            signaturePath TEXT
           )
         ''');
         await db.execute('''
@@ -89,6 +98,18 @@ class DatabaseService {
               action TEXT
             )
           ''');
+        }
+        if (oldVersion < 9) {
+          // Add new payment and delivery fields
+          await db.execute('ALTER TABLE parcels ADD COLUMN paymentMethod TEXT DEFAULT "cash"');
+          await db.execute('ALTER TABLE parcels ADD COLUMN paymentStatus TEXT DEFAULT "pending"');
+          await db.execute('ALTER TABLE parcels ADD COLUMN paymentReference TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN preferredDeliveryDate TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN preferredDeliveryTime TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN deliveryInstructions TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN pickupPhotoPath TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN deliveryPhotoPath TEXT');
+          await db.execute('ALTER TABLE parcels ADD COLUMN signaturePath TEXT');
         }
       },
     );
@@ -206,17 +227,23 @@ class DatabaseService {
     return result.map((map) => Parcel.fromMap(map)).toList();
   }
 
-  Future<void> updateAgent(Agent agent) async {
+  Future<List<Parcel>> getAllParcels() async {
     final db = await _db;
-    await db.update('agents', agent.toMap(),
-        where: 'id = ?', whereArgs: [agent.id]);
-    await _logActivity('Updated agent profile for ${agent.name}', agent.id);
+    final result = await db.query('parcels');
+    return result.map((map) => Parcel.fromMap(map)).toList();
   }
 
   Future<List<Agent>> getAllAgents() async {
     final db = await _db;
     final result = await db.query('agents');
     return result.map((map) => Agent.fromMap(map)).toList();
+  }
+
+  Future<void> updateAgent(Agent agent) async {
+    final db = await _db;
+    await db.update('agents', agent.toMap(),
+        where: 'id = ?', whereArgs: [agent.id]);
+    await _logActivity('Updated agent profile for ${agent.name}', agent.id);
   }
 
   Future<void> deleteAgent(String agentId) async {

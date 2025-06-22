@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/agent.dart';
 import '../models/parcel.dart';
 import '../services/database_service.dart';
+import '../services/payment_service.dart';
+import 'qr_display_screen.dart';
 import 'tracking_details_screen.dart';
 
 class ParcelListScreen extends StatefulWidget {
@@ -85,6 +88,18 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
           createdAt: parcel.createdAt,
           receivedBy: parcel.receivedBy,
           deliveredBy: parcel.deliveredBy,
+          // Payment fields
+          paymentMethod: parcel.paymentMethod,
+          paymentStatus: parcel.paymentStatus,
+          paymentReference: parcel.paymentReference,
+          // Delivery scheduling fields
+          preferredDeliveryDate: parcel.preferredDeliveryDate,
+          preferredDeliveryTime: parcel.preferredDeliveryTime,
+          deliveryInstructions: parcel.deliveryInstructions,
+          // Photo proof fields
+          pickupPhotoPath: parcel.pickupPhotoPath,
+          deliveryPhotoPath: parcel.deliveryPhotoPath,
+          signaturePath: parcel.signaturePath,
         );
         await DatabaseService().updateParcel(updatedParcel);
         if (!mounted) return;
@@ -164,36 +179,163 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
                                 return Card(
                                   elevation: 4,
                                   margin: const EdgeInsets.symmetric(vertical: 8),
-                                  child: ListTile(
-                                    title: Text('Tracking: ${parcel.trackingNumber}'),
-                                    subtitle: allowedStatuses.isEmpty
-                                        ? Text('Status: ${_selectedStatuses[parcel.id] ?? parcel.status}')
-                                        : DropdownButton<String>(
-                                            value: _selectedStatuses[parcel.id] ?? parcel.status,
-                                            items: [
-                                              DropdownMenuItem(
-                                                value: parcel.status,
-                                                child: Text(parcel.status),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Header with tracking number and status
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                'Tracking #${parcel.trackingNumber}',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
-                                              ...allowedStatuses.map((status) => DropdownMenuItem(
-                                                    value: status,
-                                                    child: Text(status),
-                                                  )),
-                                            ].toList(),
-                                            onChanged: (newValue) {
-                                              if (newValue != null && newValue != parcel.status) {
-                                                _updateParcelStatus(parcel, newValue);
-                                              }
-                                            },
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: parcel.status == 'Delivered'
+                                                    ? Colors.green.shade100
+                                                    : parcel.status == 'In Transit'
+                                                        ? Colors.blue.shade100
+                                                        : Colors.orange.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                parcel.status,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: parcel.status == 'Delivered'
+                                                      ? Colors.green.shade700
+                                                      : parcel.status == 'In Transit'
+                                                          ? Colors.blue.shade700
+                                                          : Colors.orange.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 8),
+
+                                        // Parcel details
+                                        Text('From: ${parcel.fromLocation}'),
+                                        Text('To: ${parcel.toLocation}'),
+                                        Text('Receiver: ${parcel.receiverName}'),
+                                        Text('Amount: TZS ${parcel.amount.toStringAsFixed(2)}'),
+
+                                        // Payment status
+                                        Row(
+                                          children: [
+                                            const Text('Payment: '),
+                                            Text(
+                                              PaymentService().getPaymentStatusDisplayName(parcel.paymentStatus),
+                                              style: TextStyle(
+                                                color: Color(PaymentService().getPaymentStatusColor(parcel.paymentStatus)),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(' (${PaymentService().getPaymentMethodDisplayName(parcel.paymentMethod)})'),
+                                          ],
+                                        ),
+
+                                        // Delivery scheduling info
+                                        if (parcel.preferredDeliveryDate != null) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Scheduled: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(parcel.preferredDeliveryDate!))}',
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade700,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              if (parcel.preferredDeliveryTime != null) ...[
+                                                Text(
+                                                  ' at ${parcel.preferredDeliveryTime}',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade700,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
-                                    trailing: const Icon(Icons.arrow_forward),
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/tracking',
-                                        arguments: parcel.trackingNumber,
-                                      );
-                                    },
+                                        ],
+
+                                        const SizedBox(height: 12),
+
+                                        // Status update and actions
+                                        Row(
+                                          children: [
+                                            if (allowedStatuses.isNotEmpty) ...[
+                                              Expanded(
+                                                child: DropdownButton<String>(
+                                                  value: _selectedStatuses[parcel.id] ?? parcel.status,
+                                                  isExpanded: true,
+                                                  items: [
+                                                    DropdownMenuItem(
+                                                      value: parcel.status,
+                                                      child: Text(parcel.status),
+                                                    ),
+                                                    ...allowedStatuses.map((status) => DropdownMenuItem(
+                                                          value: status,
+                                                          child: Text(status),
+                                                        )),
+                                                  ].toList(),
+                                                  onChanged: (newValue) {
+                                                    if (newValue != null && newValue != parcel.status) {
+                                                      _updateParcelStatus(parcel, newValue);
+                                                    }
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.pushNamed(
+                                                    context,
+                                                    '/tracking',
+                                                    arguments: parcel.trackingNumber,
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.visibility, size: 16),
+                                                label: const Text('Details'),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => QRDisplayScreen(parcel: parcel),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.qr_code, size: 16),
+                                                label: const Text('QR Code'),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },

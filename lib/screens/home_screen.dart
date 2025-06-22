@@ -6,6 +6,8 @@ import 'admin_screen.dart';
 import 'parcel_form_screen.dart';
 import 'parcel_list_screen.dart';
 import 'profile_screen.dart';
+import 'delivery_schedule_screen.dart';
+import 'qr_scanner_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Agent agent;
@@ -154,6 +156,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ParcelListScreen(agent: _agent),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildCard(
+                    context,
+                    icon: Icons.schedule,
+                    label: 'Delivery Schedule',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DeliveryScheduleScreen(agent: _agent),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildCard(
+                    context,
+                    icon: Icons.qr_code_scanner,
+                    label: 'Scan QR Code',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const QRScannerScreen(),
                         ),
                       );
                     },

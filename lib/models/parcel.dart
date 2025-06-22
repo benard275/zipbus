@@ -14,6 +14,21 @@ class Parcel {
   String? receivedBy; // Removed final to allow updates
   String? deliveredBy; // Removed final to allow updates
 
+  // New payment fields
+  final String paymentMethod; // 'mobile_money' or 'cash'
+  final String paymentStatus; // 'pending', 'paid', 'failed'
+  final String? paymentReference; // For mobile money transactions
+
+  // New delivery scheduling fields
+  final String? preferredDeliveryDate;
+  final String? preferredDeliveryTime;
+  final String? deliveryInstructions;
+
+  // New photo proof fields
+  final String? pickupPhotoPath;
+  final String? deliveryPhotoPath;
+  final String? signaturePath;
+
   Parcel({
     required this.id,
     required this.senderName,
@@ -29,6 +44,18 @@ class Parcel {
     required this.createdAt,
     this.receivedBy,
     this.deliveredBy,
+    // New payment parameters
+    required this.paymentMethod,
+    required this.paymentStatus,
+    this.paymentReference,
+    // New delivery scheduling parameters
+    this.preferredDeliveryDate,
+    this.preferredDeliveryTime,
+    this.deliveryInstructions,
+    // New photo proof parameters
+    this.pickupPhotoPath,
+    this.deliveryPhotoPath,
+    this.signaturePath,
   });
 
   Map<String, dynamic> toMap() {
@@ -47,6 +74,18 @@ class Parcel {
       'createdAt': createdAt,
       'receivedBy': receivedBy,
       'deliveredBy': deliveredBy,
+      // New payment fields
+      'paymentMethod': paymentMethod,
+      'paymentStatus': paymentStatus,
+      'paymentReference': paymentReference,
+      // New delivery scheduling fields
+      'preferredDeliveryDate': preferredDeliveryDate,
+      'preferredDeliveryTime': preferredDeliveryTime,
+      'deliveryInstructions': deliveryInstructions,
+      // New photo proof fields
+      'pickupPhotoPath': pickupPhotoPath,
+      'deliveryPhotoPath': deliveryPhotoPath,
+      'signaturePath': signaturePath,
     };
   }
 
@@ -66,6 +105,18 @@ class Parcel {
       createdAt: map['createdAt'],
       receivedBy: map['receivedBy'],
       deliveredBy: map['deliveredBy'],
+      // New payment fields
+      paymentMethod: map['paymentMethod'] ?? 'cash',
+      paymentStatus: map['paymentStatus'] ?? 'pending',
+      paymentReference: map['paymentReference'],
+      // New delivery scheduling fields
+      preferredDeliveryDate: map['preferredDeliveryDate'],
+      preferredDeliveryTime: map['preferredDeliveryTime'],
+      deliveryInstructions: map['deliveryInstructions'],
+      // New photo proof fields
+      pickupPhotoPath: map['pickupPhotoPath'],
+      deliveryPhotoPath: map['deliveryPhotoPath'],
+      signaturePath: map['signaturePath'],
     );
   }
 }

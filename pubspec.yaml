@@ -19,6 +19,12 @@ dependencies:
   provider: ^6.1.0
   image_picker: ^1.1.2
   url_launcher: ^6.2.4 # For launching messaging apps
+  # New dependencies for enhanced features
+  signature: ^5.4.0 # For digital signatures
+  qr_flutter: ^4.1.0 # For QR code generation
+  mobile_scanner: ^5.0.0 # For QR code scanning
+  fl_chart: ^0.68.0 # For analytics charts
+  camera: ^0.10.5+9 # For photo proof
 
 dev_dependencies:
   flutter_test:

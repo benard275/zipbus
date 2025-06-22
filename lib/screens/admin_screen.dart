@@ -9,6 +9,7 @@ import 'profile_screen.dart';
 import 'agent_parcel_screen.dart';
 import 'activity_tracking_screen.dart';
 import 'notification_test_screen.dart';
+import 'analytics_dashboard_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -423,6 +424,30 @@ class _AdminScreenState extends State<AdminScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => const ActivityTrackingScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.analytics, color: Color(0xFF1976D2)),
+                                title: const Text('Analytics Dashboard'),
+                                subtitle: const Text('View comprehensive business analytics'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AnalyticsDashboardScreen(
+                                        agent: Agent(
+                                          id: '1',
+                                          name: 'Admin User',
+                                          email: 'admin@zipbus2.com',
+                                          password: 'admin123',
+                                          mobile: '1234567890',
+                                          isAdmin: true,
+                                          isFrozen: false,
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },
