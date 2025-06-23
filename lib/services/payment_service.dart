@@ -7,7 +7,7 @@ class PaymentService {
   PaymentService._internal();
 
   // Business mobile money details
-  static const String businessPhoneNumber = '0625661245';
+  static const String businessPhoneNumber = '0629661245';
   static const String businessName = 'BENARD PAUL';
 
   /// Process mobile money payment

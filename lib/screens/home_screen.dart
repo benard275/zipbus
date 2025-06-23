@@ -2,12 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/agent.dart';
+import '../services/database_service.dart';
 import 'admin_screen.dart';
 import 'parcel_form_screen.dart';
 import 'parcel_list_screen.dart';
 import 'profile_screen.dart';
 import 'delivery_schedule_screen.dart';
 import 'qr_scanner_screen.dart';
+import 'chat_list_screen.dart';
+import '../widgets/theme_selector.dart';
 
 class HomeScreen extends StatefulWidget {
   final Agent agent;
@@ -20,11 +23,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Agent _agent;
+  final DatabaseService _databaseService = DatabaseService();
+  int _unreadMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
     _agent = widget.agent;
+    _loadUnreadMessageCount();
+  }
+
+  Future<void> _loadUnreadMessageCount() async {
+    try {
+      final count = await _databaseService.getUnreadMessageCount(_agent.id);
+      if (mounted) {
+        setState(() {
+          _unreadMessageCount = count;
+        });
+      }
+    } catch (e) {
+      // Silently handle error - not critical for home screen
+      debugPrint('Error loading unread message count: $e');
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -67,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('ZipBus Dashboard'),
         centerTitle: true,
         actions: [
+          const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -186,6 +207,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
+                  _buildChatCard(
+                    context,
+                    icon: Icons.chat,
+                    label: 'Messages',
+                    unreadCount: _unreadMessageCount,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatListScreen(currentUser: _agent),
+                        ),
+                      );
+                      // Refresh unread count when returning from chat
+                      _loadUnreadMessageCount();
+                    },
+                  ),
                   if (_agent.isAdmin)
                     _buildCard(
                       context,
@@ -220,6 +257,58 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 48, color: const Color(0xFF1976D2)),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatCard(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required int unreadCount,
+    required VoidCallback onTap
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: InkWell(
+        onTap: onTap,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                children: [
+                  Icon(icon, size: 48, color: const Color(0xFF1976D2)),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 8),
               Text(
                 label,

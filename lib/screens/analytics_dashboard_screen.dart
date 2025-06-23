@@ -213,7 +213,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.5,
+          childAspectRatio: 1.3,
           children: [
             _buildMetricCard(
               'Total Parcels',
@@ -238,6 +238,18 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               _analyticsData!.inTransitParcels.toString(),
               Icons.local_shipping,
               Colors.orange,
+            ),
+            _buildMetricCard(
+              'Cancelled',
+              _analyticsData!.cancelledParcels.toString(),
+              Icons.cancel,
+              Colors.red,
+            ),
+            _buildMetricCard(
+              'Pending',
+              _analyticsData!.pendingParcels.toString(),
+              Icons.pending,
+              Colors.grey,
             ),
           ],
         ),
@@ -404,8 +416,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
     if (total == 0) return [];
 
-    final colors = [Colors.orange, Colors.blue, Colors.green];
-    final statuses = ['Pending', 'In Transit', 'Delivered'];
+    final colors = [Colors.grey, Colors.orange, Colors.blue, Colors.green, Colors.red];
+    final statuses = ['Pending', 'In Transit', 'Delivered', 'Cancelled'];
 
     return statuses.asMap().entries.map((entry) {
       final index = entry.key;

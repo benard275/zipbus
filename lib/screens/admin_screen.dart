@@ -10,6 +10,12 @@ import 'agent_parcel_screen.dart';
 import 'activity_tracking_screen.dart';
 import 'notification_test_screen.dart';
 import 'analytics_dashboard_screen.dart';
+import 'payment_tracking_screen.dart';
+import 'enhanced_analytics_dashboard_screen.dart';
+import 'financial_reports_screen.dart';
+import 'invoice_management_screen.dart';
+import 'enhanced_features_summary_screen.dart';
+import '../widgets/theme_selector.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -99,6 +105,30 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  Future<void> _removeAgentProfilePicture(String agentId) async {
+    try {
+      await DatabaseService().removeAgentProfilePicture(agentId);
+      await _fetchData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture removed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showAddEditAgentDialog({Agent? agent}) {
     final isEditing = agent != null;
     final nameController = TextEditingController(text: agent?.name ?? '');
@@ -163,11 +193,38 @@ class _AdminScreenState extends State<AdminScreen> {
                         const Text('Freeze Account'),
                       ],
                     ),
-                    if (isEditing && agent.id == currentUserId)
-                      ElevatedButton(
-                        onPressed: () => _pickAndUpdateProfilePicture(agent.id),
-                        child: const Text('Update Profile Picture'),
+                    if (isEditing && agent.id == currentUserId) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _pickAndUpdateProfilePicture(agent.id),
+                              icon: const Icon(Icons.camera_alt, size: 16),
+                              label: const Text('Change Picture'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: agent.profilePicture != null
+                                ? () => _removeAgentProfilePicture(agent.id)
+                                : null,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: BorderSide(
+                                  color: agent.profilePicture != null
+                                    ? Colors.red
+                                    : Colors.grey.shade300,
+                                ),
+                              ),
+                              icon: const Icon(Icons.delete, size: 16),
+                              label: const Text('Remove'),
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -240,6 +297,9 @@ class _AdminScreenState extends State<AdminScreen> {
       appBar: AppBar(
         title: const Text('Admin Panel'),
         centerTitle: true,
+        actions: const [
+          ThemeToggleButton(),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -454,6 +514,86 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                               const Divider(),
                               ListTile(
+                                leading: const Icon(Icons.payment, color: Color(0xFF1976D2)),
+                                title: const Text('Payment Tracking'),
+                                subtitle: const Text('Track and monitor all payments (Admin Only)'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PaymentTrackingScreen(
+                                        agent: Agent(
+                                          id: '1',
+                                          name: 'Admin User',
+                                          email: 'admin@zipbus2.com',
+                                          password: 'admin123',
+                                          mobile: '1234567890',
+                                          isAdmin: true,
+                                          isFrozen: false,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.rocket_launch, color: Color(0xFF1976D2)),
+                                title: const Text('Enhanced Features Overview'),
+                                subtitle: const Text('View all new business intelligence features'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const EnhancedFeaturesSummaryScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.analytics_outlined, color: Color(0xFF1976D2)),
+                                title: const Text('Enhanced Analytics'),
+                                subtitle: const Text('Customer analytics, satisfaction scores & business intelligence'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const EnhancedAnalyticsDashboardScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.attach_money, color: Color(0xFF1976D2)),
+                                title: const Text('Financial Reports'),
+                                subtitle: const Text('Daily/monthly revenue summaries & profit analysis'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const FinancialReportsScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.receipt_long, color: Color(0xFF1976D2)),
+                                title: const Text('Invoice Management'),
+                                subtitle: const Text('Generate & manage automated PDF invoices'),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const InvoiceManagementScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
                                 leading: const Icon(Icons.notifications_active, color: Color(0xFF1976D2)),
                                 title: const Text('Test Notifications'),
                                 subtitle: const Text('Test the new messaging system'),
@@ -477,6 +617,15 @@ class _AdminScreenState extends State<AdminScreen> {
                                       builder: (context) => const PrivacyAndSecurityScreen(),
                                     ),
                                   );
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                leading: const Icon(Icons.palette, color: Color(0xFF1976D2)),
+                                title: const Text('Theme Settings'),
+                                subtitle: const Text('Change app appearance'),
+                                onTap: () {
+                                  ThemeSelector.showThemeBottomSheet(context);
                                 },
                               ),
                               const Divider(),

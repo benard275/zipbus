@@ -6,6 +6,7 @@ import '../models/agent.dart';
 import '../models/parcel.dart';
 import '../services/database_service.dart';
 import '../services/payment_service.dart';
+import '../services/customer_analytics_service.dart';
 
 class ParcelFormScreen extends StatefulWidget {
   final Agent agent;
@@ -40,7 +41,37 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
   DateTime? _preferredDeliveryDate;
   TimeOfDay? _preferredDeliveryTime;
 
+  // Smart parcel features
+  bool _hasInsurance = false;
+  double? _insuranceValue;
+  double? _insurancePremium;
+  String? _specialHandling;
+  double? _declaredValue;
+
   final PaymentService _paymentService = PaymentService();
+  final CustomerAnalyticsService _analyticsService = CustomerAnalyticsService();
+
+  // Special handling options
+  final List<String> _specialHandlingOptions = [
+    'standard',
+    'fragile',
+    'urgent',
+    'cold_chain',
+  ];
+
+  final Map<String, String> _specialHandlingLabels = {
+    'standard': 'Standard Handling',
+    'fragile': 'Fragile (+ TZS 5,000)',
+    'urgent': 'Urgent Delivery (+ TZS 10,000)',
+    'cold_chain': 'Cold Chain (+ TZS 15,000)',
+  };
+
+  final Map<String, double> _specialHandlingFees = {
+    'standard': 0.0,
+    'fragile': 5000.0,
+    'urgent': 10000.0,
+    'cold_chain': 15000.0,
+  };
 
   @override
   void initState() {
@@ -122,9 +153,22 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
           deliveryInstructions: _deliveryInstructionsController.text.trim().isEmpty
               ? null
               : _deliveryInstructionsController.text.trim(),
+          // Smart parcel features
+          hasInsurance: _hasInsurance,
+          insuranceValue: _insuranceValue,
+          insurancePremium: _insurancePremium,
+          specialHandling: _specialHandling,
+          declaredValue: _declaredValue,
         );
 
         await DatabaseService().insertParcel(parcel);
+
+        // Update customer analytics
+        await _analyticsService.updateCustomerAnalytics(parcel.senderPhone);
+
+        // Debug: Check delivery schedules in database
+        await DatabaseService().debugDeliverySchedules();
+
         if (!mounted) return;
         Navigator.pop(context);
       } catch (e) {
@@ -170,6 +214,22 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
         _preferredDeliveryTime = picked;
       });
     }
+  }
+
+  void _calculateInsurancePremium() {
+    if (_hasInsurance && _insuranceValue != null && _insuranceValue! > 0) {
+      // Insurance premium is 2% of declared value, minimum TZS 2,000
+      _insurancePremium = (_insuranceValue! * 0.02).clamp(2000.0, double.infinity);
+    } else {
+      _insurancePremium = null;
+    }
+  }
+
+  double _calculateTotalAmount() {
+    double baseAmount = double.tryParse(_amountController.text) ?? 0.0;
+    double specialHandlingFee = _specialHandlingFees[_specialHandling] ?? 0.0;
+    double insuranceFee = _insurancePremium ?? 0.0;
+    return baseAmount + specialHandlingFee + insuranceFee;
   }
 
   @override
@@ -313,7 +373,7 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 4),
-                        Text('Send payment to: 0625661245'),
+                        Text('Send payment to: 0629661245'),
                         Text('Name: BENARD PAUL'),
                         Text('💡 Payment instructions will be sent via SMS'),
                       ],
@@ -387,6 +447,175 @@ class _ParcelFormScreenState extends State<ParcelFormScreen> {
                   ),
                   maxLines: 2,
                 ),
+
+                const SizedBox(height: 24),
+
+                // Smart Parcel Features Section
+                const Text(
+                  'Smart Parcel Features',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+
+                // Special Handling
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Special Handling',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._specialHandlingOptions.map((option) {
+                          return RadioListTile<String>(
+                            title: Text(_specialHandlingLabels[option]!),
+                            value: option,
+                            groupValue: _specialHandling ?? 'standard',
+                            onChanged: (value) {
+                              setState(() {
+                                _specialHandling = value;
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Insurance Options
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CheckboxListTile(
+                          title: const Text('Add Parcel Insurance'),
+                          subtitle: const Text('Protect your parcel value'),
+                          value: _hasInsurance,
+                          onChanged: (value) {
+                            setState(() {
+                              _hasInsurance = value ?? false;
+                              if (!_hasInsurance) {
+                                _insuranceValue = null;
+                                _insurancePremium = null;
+                                _declaredValue = null;
+                              }
+                            });
+                          },
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        if (_hasInsurance) ...[
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            decoration: const InputDecoration(
+                              labelText: 'Declared Value (TZS)',
+                              hintText: 'Enter the value of your parcel',
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              final declaredValue = double.tryParse(value);
+                              setState(() {
+                                _declaredValue = declaredValue;
+                                _insuranceValue = declaredValue;
+                                _calculateInsurancePremium();
+                              });
+                            },
+                            validator: _hasInsurance
+                                ? (value) {
+                                    if (value?.trim().isEmpty ?? true) return 'Enter declared value';
+                                    final amount = double.tryParse(value!);
+                                    if (amount == null || amount <= 0) return 'Enter a valid positive amount';
+                                    return null;
+                                  }
+                                : null,
+                          ),
+                          if (_insurancePremium != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.green.shade200),
+                              ),
+                              child: Text(
+                                'Insurance Premium: TZS ${_insurancePremium!.toStringAsFixed(2)}',
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Total Amount Display
+                if (_specialHandling != null || _hasInsurance) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    color: Colors.blue.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Cost Breakdown',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Base Amount:'),
+                              Text('TZS ${(double.tryParse(_amountController.text) ?? 0.0).toStringAsFixed(2)}'),
+                            ],
+                          ),
+                          if (_specialHandling != null && _specialHandling != 'standard') ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('${_specialHandlingLabels[_specialHandling]?.split('(')[0].trim()}:'),
+                                Text('TZS ${(_specialHandlingFees[_specialHandling] ?? 0.0).toStringAsFixed(2)}'),
+                              ],
+                            ),
+                          ],
+                          if (_hasInsurance && _insurancePremium != null) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Insurance Premium:'),
+                                Text('TZS ${_insurancePremium!.toStringAsFixed(2)}'),
+                              ],
+                            ),
+                          ],
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total Amount:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'TZS ${_calculateTotalAmount().toStringAsFixed(2)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 24),
                 Text('Tracking Number: $_trackingNumber'),

@@ -135,6 +135,9 @@ class NotificationService {
       case 'delivered':
         message = '✅ Your ZipBus parcel #$trackingNumber has been delivered!';
         break;
+      case 'cancelled':
+        message = '❌ Your ZipBus parcel #$trackingNumber has been cancelled. Contact us for more details.';
+        break;
       default:
         message = '📱 ZipBus update: Your parcel #$trackingNumber status: $status';
     }

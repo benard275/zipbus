@@ -8,6 +8,7 @@ class AnalyticsData {
   final int pendingParcels;
   final int inTransitParcels;
   final int deliveredParcels;
+  final int cancelledParcels;
   final double totalRevenue;
   final double averageParcelValue;
   final Map<String, int> parcelsByStatus;
@@ -21,6 +22,7 @@ class AnalyticsData {
     required this.pendingParcels,
     required this.inTransitParcels,
     required this.deliveredParcels,
+    required this.cancelledParcels,
     required this.totalRevenue,
     required this.averageParcelValue,
     required this.parcelsByStatus,
@@ -80,6 +82,7 @@ class AnalyticsService {
       final pendingParcels = filteredParcels.where((p) => p.status == 'Pending').length;
       final inTransitParcels = filteredParcels.where((p) => p.status == 'In Transit').length;
       final deliveredParcels = filteredParcels.where((p) => p.status == 'Delivered').length;
+      final cancelledParcels = filteredParcels.where((p) => p.status == 'Cancelled').length;
 
       // Revenue calculations
       final totalRevenue = filteredParcels.fold<double>(0, (sum, parcel) => sum + parcel.amount);
@@ -90,6 +93,7 @@ class AnalyticsService {
         'Pending': pendingParcels,
         'In Transit': inTransitParcels,
         'Delivered': deliveredParcels,
+        'Cancelled': cancelledParcels,
       };
 
       // Revenue by payment method
@@ -128,6 +132,7 @@ class AnalyticsService {
         pendingParcels: pendingParcels,
         inTransitParcels: inTransitParcels,
         deliveredParcels: deliveredParcels,
+        cancelledParcels: cancelledParcels,
         totalRevenue: totalRevenue,
         averageParcelValue: averageParcelValue,
         parcelsByStatus: parcelsByStatus,

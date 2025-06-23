@@ -25,6 +25,7 @@ dependencies:
   mobile_scanner: ^5.0.0 # For QR code scanning
   fl_chart: ^0.68.0 # For analytics charts
   camera: ^0.10.5+9 # For photo proof
+  pdf: ^3.10.8 # For PDF invoice generation
 
 dev_dependencies:
   flutter_test:

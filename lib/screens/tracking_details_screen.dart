@@ -7,6 +7,7 @@ import '../services/database_service.dart';
 import '../services/sms_service.dart';
 import 'qr_display_screen.dart';
 import 'photo_signature_viewer_screen.dart';
+import 'customer_satisfaction_screen.dart';
 
 class TrackingDetailsScreen extends StatefulWidget {
   final String trackingNumber;
@@ -92,6 +93,12 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
           pickupPhotoPath: parcel.pickupPhotoPath,
           deliveryPhotoPath: parcel.deliveryPhotoPath,
           signaturePath: parcel.signaturePath,
+          // Smart parcel features
+          hasInsurance: parcel.hasInsurance,
+          insuranceValue: parcel.insuranceValue,
+          insurancePremium: parcel.insurancePremium,
+          specialHandling: parcel.specialHandling,
+          declaredValue: parcel.declaredValue,
         );
         await dbService.updateParcel(updatedParcel);
         setState(() {
@@ -125,6 +132,12 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
           pickupPhotoPath: parcel.pickupPhotoPath,
           deliveryPhotoPath: parcel.deliveryPhotoPath,
           signaturePath: parcel.signaturePath,
+          // Smart parcel features
+          hasInsurance: parcel.hasInsurance,
+          insuranceValue: parcel.insuranceValue,
+          insurancePremium: parcel.insurancePremium,
+          specialHandling: parcel.specialHandling,
+          declaredValue: parcel.declaredValue,
         );
         await dbService.updateParcel(updatedParcel);
         setState(() {
@@ -238,6 +251,46 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
                           const SizedBox(height: 8),
                           Text('Created At: ${_parcel!.createdAt}'),
 
+                          // Smart Parcel Features Display
+                          if (_parcel!.hasInsurance || _parcel!.specialHandling != null) ...[
+                            const SizedBox(height: 16),
+                            Card(
+                              color: Colors.blue.shade50,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Smart Parcel Features',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (_parcel!.hasInsurance) ...[
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.security, size: 16, color: Colors.green),
+                                          const SizedBox(width: 4),
+                                          Text('Insurance: TZS ${_parcel!.insuranceValue?.toStringAsFixed(2) ?? 'N/A'}'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                    ],
+                                    if (_parcel!.specialHandling != null) ...[
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.priority_high, size: 16, color: Colors.orange),
+                                          const SizedBox(width: 4),
+                                          Text('Special Handling: ${_parcel!.specialHandling!.toUpperCase()}'),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+
                           const SizedBox(height: 24),
 
                           // Action buttons
@@ -274,6 +327,30 @@ class _TrackingDetailsScreenState extends State<TrackingDetailsScreen> {
                               ),
                             ],
                           ),
+
+                          // Customer Satisfaction Button (only for delivered parcels)
+                          if (_parcel!.status == 'Delivered') ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CustomerSatisfactionScreen(parcel: _parcel!),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.star),
+                                label: const Text('Rate This Delivery'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
       ),

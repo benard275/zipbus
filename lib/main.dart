@@ -11,13 +11,16 @@ import 'screens/parcel_list_screen.dart';
 import 'screens/tracking_details_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/admin_screen.dart';
+import 'screens/chat_list_screen.dart';
 import 'services/sms_service.dart';
+import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize notification service
+  // Initialize services
   await NotificationService().initialize();
+  await ThemeService().initialize();
 
   runApp(const ZipBusApp());
 }
@@ -27,26 +30,16 @@ class ZipBusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ZipBus',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFF1976D2),
-        scaffoldBackgroundColor: Colors.white,
-        cardTheme: CardThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1976D2),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-          ),
-        ),
-      ),
-      initialRoute: '/splash',
+    return ListenableBuilder(
+      listenable: ThemeService(),
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'ZipBus',
+          debugShowCheckedModeBanner: false,
+          theme: AppThemes.lightTheme,
+          darkTheme: AppThemes.darkTheme,
+          themeMode: ThemeService().flutterThemeMode,
+          initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
@@ -91,6 +84,16 @@ class ZipBusApp extends StatelessWidget {
           }
         },
         '/admin': (context) => const AdminScreen(),
+        '/chat': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is Agent) {
+            return ChatListScreen(currentUser: args);
+          } else {
+            return const SplashScreen();
+          }
+        },
+      },
+        );
       },
     );
   }

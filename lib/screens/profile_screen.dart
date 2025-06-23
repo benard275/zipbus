@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/database_service.dart';
 import '../models/agent.dart';
 import 'profile_settings_screen.dart';
+import '../widgets/theme_selector.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Agent agent;
@@ -72,6 +73,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _removeProfilePicture(String agentId) async {
+    // Show confirmation dialog
+    final confirmed = await _showRemoveProfilePictureDialog();
+    if (!confirmed) return;
+
+    try {
+      await DatabaseService().removeAgentProfilePicture(agentId);
+      await _fetchCurrentAgent();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Profile picture removed successfully'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _showRemoveProfilePictureDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Remove Profile Picture'),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to remove your profile picture?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'This will replace your current profile picture with the default avatar.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,6 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         backgroundColor: const Color(0xFF1976D2), // Blue theme
         actions: [
+          const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -136,13 +218,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : null,
                       ),
                       const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => _pickAndUpdateProfilePicture(_currentAgent.id),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF57C00), // Orange theme
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Change Profile Picture'),
+                      // Profile picture action buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _pickAndUpdateProfilePicture(_currentAgent.id),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF57C00), // Orange theme
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: const Icon(Icons.camera_alt, size: 18),
+                              label: const Text('Change'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _currentAgent.profilePicture != null
+                                ? () => _removeProfilePicture(_currentAgent.id)
+                                : null,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: BorderSide(
+                                  color: _currentAgent.profilePicture != null
+                                    ? Colors.red
+                                    : Colors.grey.shade300,
+                                ),
+                              ),
+                              icon: const Icon(Icons.delete, size: 18),
+                              label: const Text('Remove'),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       // Profile Details

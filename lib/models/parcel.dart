@@ -29,6 +29,13 @@ class Parcel {
   final String? deliveryPhotoPath;
   final String? signaturePath;
 
+  // Smart parcel features
+  final bool hasInsurance;
+  final double? insuranceValue;
+  final double? insurancePremium;
+  final String? specialHandling; // 'fragile', 'urgent', 'cold_chain', 'standard'
+  final double? declaredValue;
+
   Parcel({
     required this.id,
     required this.senderName,
@@ -56,6 +63,12 @@ class Parcel {
     this.pickupPhotoPath,
     this.deliveryPhotoPath,
     this.signaturePath,
+    // Smart parcel features parameters
+    this.hasInsurance = false,
+    this.insuranceValue,
+    this.insurancePremium,
+    this.specialHandling,
+    this.declaredValue,
   });
 
   Map<String, dynamic> toMap() {
@@ -86,6 +99,12 @@ class Parcel {
       'pickupPhotoPath': pickupPhotoPath,
       'deliveryPhotoPath': deliveryPhotoPath,
       'signaturePath': signaturePath,
+      // Smart parcel features fields
+      'hasInsurance': hasInsurance ? 1 : 0,
+      'insuranceValue': insuranceValue,
+      'insurancePremium': insurancePremium,
+      'specialHandling': specialHandling,
+      'declaredValue': declaredValue,
     };
   }
 
@@ -117,6 +136,12 @@ class Parcel {
       pickupPhotoPath: map['pickupPhotoPath'],
       deliveryPhotoPath: map['deliveryPhotoPath'],
       signaturePath: map['signaturePath'],
+      // Smart parcel features fields
+      hasInsurance: (map['hasInsurance'] as int?) == 1,
+      insuranceValue: map['insuranceValue']?.toDouble(),
+      insurancePremium: map['insurancePremium']?.toDouble(),
+      specialHandling: map['specialHandling'],
+      declaredValue: map['declaredValue']?.toDouble(),
     );
   }
 }

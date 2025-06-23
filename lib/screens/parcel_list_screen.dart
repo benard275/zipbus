@@ -6,6 +6,7 @@ import '../services/database_service.dart';
 import '../services/payment_service.dart';
 import 'qr_display_screen.dart';
 import 'tracking_details_screen.dart';
+import '../widgets/theme_selector.dart';
 
 class ParcelListScreen extends StatefulWidget {
   final Agent agent;
@@ -70,7 +71,13 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
   }
 
   Future<void> _updateParcelStatus(Parcel parcel, String newStatus) async {
-    if ((parcel.status == 'Pending' && newStatus == 'In Transit') ||
+    // Show confirmation dialog for cancellation
+    if (newStatus == 'Cancelled') {
+      final confirmed = await _showCancellationDialog(parcel);
+      if (!confirmed) return;
+    }
+
+    if ((parcel.status == 'Pending' && (newStatus == 'In Transit' || newStatus == 'Cancelled')) ||
         (parcel.status == 'In Transit' && newStatus == 'Delivered')) {
       try {
         final updatedParcel = Parcel(
@@ -135,6 +142,9 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
       appBar: AppBar(
         title: const Text('Your Parcels'),
         centerTitle: true,
+        actions: const [
+          ThemeToggleButton(),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -206,7 +216,9 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
                                                     ? Colors.green.shade100
                                                     : parcel.status == 'In Transit'
                                                         ? Colors.blue.shade100
-                                                        : Colors.orange.shade100,
+                                                        : parcel.status == 'Cancelled'
+                                                            ? Colors.red.shade100
+                                                            : Colors.orange.shade100,
                                                 borderRadius: BorderRadius.circular(12),
                                               ),
                                               child: Text(
@@ -218,7 +230,9 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
                                                       ? Colors.green.shade700
                                                       : parcel.status == 'In Transit'
                                                           ? Colors.blue.shade700
-                                                          : Colors.orange.shade700,
+                                                          : parcel.status == 'Cancelled'
+                                                              ? Colors.red.shade700
+                                                              : Colors.orange.shade700,
                                                 ),
                                               ),
                                             ),
@@ -334,6 +348,22 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
                                             ),
                                           ],
                                         ),
+                                        // Payment action button (only for pending payments)
+                                        if (parcel.paymentStatus == 'pending') ...[
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton.icon(
+                                              onPressed: () => _markPaymentAsPaid(parcel),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.green,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              icon: const Icon(Icons.payment, size: 16),
+                                              label: const Text('Mark as Paid'),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -347,13 +377,216 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
     );
   }
 
+  Future<void> _markPaymentAsPaid(Parcel parcel) async {
+    // Show confirmation dialog
+    final confirmed = await _showPaymentConfirmationDialog(parcel);
+    if (!confirmed) return;
+
+    try {
+      final success = await DatabaseService().markPaymentAsPaid(
+        parcelId: parcel.id,
+        agentId: widget.agent.id,
+        agentName: widget.agent.name,
+      );
+
+      if (success) {
+        // Refresh the parcel list
+        _fetchParcels();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Payment marked as PAID for parcel #${parcel.trackingNumber}',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to mark payment as paid. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _showPaymentConfirmationDialog(Parcel parcel) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.payment, color: Colors.green),
+              SizedBox(width: 8),
+              Text('Confirm Payment'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Mark this payment as PAID?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tracking: #${parcel.trackingNumber}'),
+                    Text('Amount: TZS ${parcel.amount.toStringAsFixed(2)}'),
+                    Text('Method: ${PaymentService().getPaymentMethodDisplayName(parcel.paymentMethod)}'),
+                    Text('From: ${parcel.fromLocation}'),
+                    Text('To: ${parcel.toLocation}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: const Text(
+                  '⚠️ This action is IRREVERSIBLE. Once marked as paid, it cannot be changed back to pending.',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Mark as Paid'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<bool> _showCancellationDialog(Parcel parcel) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Cancel Parcel'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to cancel this parcel?',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tracking: #${parcel.trackingNumber}'),
+                    Text('From: ${parcel.fromLocation}'),
+                    Text('To: ${parcel.toLocation}'),
+                    Text('Sender: ${parcel.senderName}'),
+                    Text('Amount: TZS ${parcel.amount.toStringAsFixed(2)}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '⚠️ This action cannot be undone. The sender and receiver will be notified.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep Parcel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Cancel Parcel'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
   List<String> getAllowedStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'Pending':
-        return ['In Transit'];
+        return ['In Transit', 'Cancelled'];
       case 'In Transit':
         return ['Delivered'];
       case 'Delivered':
+      case 'Cancelled':
       default:
         return [];
     }
