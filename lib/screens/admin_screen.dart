@@ -293,78 +293,149 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Panel'),
-        centerTitle: true,
-        actions: const [
-          ThemeToggleButton(),
-        ],
-      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    theme.primaryColor.withValues(alpha: 0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _fetchData,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.primaryColor.withValues(alpha: 0.1),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
-                )
-              : SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                  child: Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Parcel Analysis Section
-                        const Text(
-                          'Parcel Analysis',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.shade400,
                         ),
                         const SizedBox(height: 16),
-                        Card(
-                          elevation: 4,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _buildStatCard(
-                                      'Received but Pending',
-                                      _pendingCount,
-                                      const Color(0xFFF57C00), // Orange
-                                    ),
-                                    _buildStatCard(
-                                      'In Transit',
-                                      _inTransitCount,
-                                      const Color(0xFF1976D2), // Blue
-                                    ),
-                                    _buildStatCard(
-                                      'Delivered',
-                                      _deliveredCount,
-                                      Colors.green,
-                                    ),
-                                  ],
-                                ),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _fetchData,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : CustomScrollView(
+                  slivers: [
+                    SliverAppBar(
+                      expandedHeight: 200,
+                      floating: false,
+                      pinned: true,
+                      flexibleSpace: FlexibleSpaceBar(
+                        title: const Text(
+                          'Admin Dashboard',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 1),
+                                blurRadius: 3,
+                                color: Colors.black26,
+                              ),
+                            ],
+                          ),
+                        ),
+                        background: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                theme.primaryColor,
+                                theme.primaryColor.withValues(alpha: 0.8),
                               ],
                             ),
                           ),
                         ),
+                      ),
+                      actions: const [
+                        ThemeToggleButton(),
+                      ],
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Analytics Overview Section
+                            Text(
+                              'Analytics Overview',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Stats Cards Grid
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.9,
+                              children: [
+                                _buildModernStatCard(
+                                  'Pending',
+                                  _pendingCount,
+                                  Icons.pending_actions,
+                                  Colors.orange,
+                                  theme,
+                                ),
+                                _buildModernStatCard(
+                                  'In Transit',
+                                  _inTransitCount,
+                                  Icons.local_shipping,
+                                  Colors.blue,
+                                  theme,
+                                ),
+                                _buildModernStatCard(
+                                  'Delivered',
+                                  _deliveredCount,
+                                  Icons.check_circle,
+                                  Colors.green,
+                                  theme,
+                                ),
+                              ],
+                            ),
                         const SizedBox(height: 24),
                         // Agents Section
                         const Text(
@@ -393,12 +464,21 @@ class _AdminScreenState extends State<AdminScreen> {
                                   final agent = _agents[index];
                                   return Card(
                                     child: ListTile(
-                                      title: Text(agent.name),
+                                      title: Text(
+                                        agent.name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                       subtitle: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(agent.email),
-                                          Text(agent.mobile),
+                                          Text(
+                                            agent.email,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            agent.mobile,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                           Text('Role: ${agent.isAdmin ? 'Admin' : 'Agent'}'),
                                           Text('Status: ${agent.isFrozen ? 'Frozen' : 'Active'}'),
                                         ],
@@ -644,9 +724,11 @@ class _AdminScreenState extends State<AdminScreen> {
                             ],
                           ),
                         ),
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditAgentDialog(),
@@ -655,23 +737,67 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, int count, Color color) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+
+
+  Widget _buildModernStatCard(String title, int count, IconData icon, Color color, ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.grey.shade50,
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              count.toString(),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

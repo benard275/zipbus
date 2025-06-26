@@ -536,6 +536,7 @@ class _EnhancedAnalyticsDashboardScreenState extends State<EnhancedAnalyticsDash
                   child: Text(
                     title,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -544,6 +545,7 @@ class _EnhancedAnalyticsDashboardScreenState extends State<EnhancedAnalyticsDash
             Text(
               value,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

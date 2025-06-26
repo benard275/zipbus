@@ -138,241 +138,170 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Parcels'),
         centerTitle: true,
+        elevation: 0,
         actions: const [
           ThemeToggleButton(),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search by Tracking Number or Status',
-                prefixIcon: Icon(Icons.search),
+      body: Column(
+        children: [
+          // Search Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _errorMessage != null
-                      ? Center(
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Search by Tracking Number or Status',
+                      prefixIcon: Icon(Icons.search, color: theme.primaryColor),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: theme.primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_filteredParcels.length} parcel${_filteredParcels.length != 1 ? 's' : ''} found',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? Container(
+                    padding: const EdgeInsets.all(40),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: theme.primaryColor),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading parcels...',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _errorMessage != null
+                    ? Container(
+                        padding: const EdgeInsets.all(40),
+                        child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.red),
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red.shade400,
                               ),
                               const SizedBox(height: 16),
-                              ElevatedButton(
+                              Text(
+                                _errorMessage!,
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
                                 onPressed: _fetchParcels,
-                                child: const Text('Retry'),
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
                               ),
                             ],
                           ),
-                        )
-                      : _filteredParcels.isEmpty
-                          ? const Center(child: Text('No parcels found.'))
-                          : ListView.builder(
-                              itemCount: _filteredParcels.length,
-                              itemBuilder: (context, index) {
-                                final parcel = _filteredParcels[index];
-                                final allowedStatuses = getAllowedStatuses(parcel.status);
-
-                                return Card(
-                                  elevation: 4,
-                                  margin: const EdgeInsets.symmetric(vertical: 8),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Header with tracking number and status
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                'Tracking #${parcel.trackingNumber}',
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: parcel.status == 'Delivered'
-                                                    ? Colors.green.shade100
-                                                    : parcel.status == 'In Transit'
-                                                        ? Colors.blue.shade100
-                                                        : parcel.status == 'Cancelled'
-                                                            ? Colors.red.shade100
-                                                            : Colors.orange.shade100,
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                parcel.status,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: parcel.status == 'Delivered'
-                                                      ? Colors.green.shade700
-                                                      : parcel.status == 'In Transit'
-                                                          ? Colors.blue.shade700
-                                                          : parcel.status == 'Cancelled'
-                                                              ? Colors.red.shade700
-                                                              : Colors.orange.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        const SizedBox(height: 8),
-
-                                        // Parcel details
-                                        Text('From: ${parcel.fromLocation}'),
-                                        Text('To: ${parcel.toLocation}'),
-                                        Text('Receiver: ${parcel.receiverName}'),
-                                        Text('Amount: TZS ${parcel.amount.toStringAsFixed(2)}'),
-
-                                        // Payment status
-                                        Row(
-                                          children: [
-                                            const Text('Payment: '),
-                                            Text(
-                                              PaymentService().getPaymentStatusDisplayName(parcel.paymentStatus),
-                                              style: TextStyle(
-                                                color: Color(PaymentService().getPaymentStatusColor(parcel.paymentStatus)),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            Text(' (${PaymentService().getPaymentMethodDisplayName(parcel.paymentMethod)})'),
-                                          ],
-                                        ),
-
-                                        // Delivery scheduling info
-                                        if (parcel.preferredDeliveryDate != null) ...[
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Scheduled: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(parcel.preferredDeliveryDate!))}',
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade700,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              if (parcel.preferredDeliveryTime != null) ...[
-                                                Text(
-                                                  ' at ${parcel.preferredDeliveryTime}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey.shade700,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ],
-
-                                        const SizedBox(height: 12),
-
-                                        // Status update and actions
-                                        Row(
-                                          children: [
-                                            if (allowedStatuses.isNotEmpty) ...[
-                                              Expanded(
-                                                child: DropdownButton<String>(
-                                                  value: _selectedStatuses[parcel.id] ?? parcel.status,
-                                                  isExpanded: true,
-                                                  items: [
-                                                    DropdownMenuItem(
-                                                      value: parcel.status,
-                                                      child: Text(parcel.status),
-                                                    ),
-                                                    ...allowedStatuses.map((status) => DropdownMenuItem(
-                                                          value: status,
-                                                          child: Text(status),
-                                                        )),
-                                                  ].toList(),
-                                                  onChanged: (newValue) {
-                                                    if (newValue != null && newValue != parcel.status) {
-                                                      _updateParcelStatus(parcel, newValue);
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                            ],
-                                            Expanded(
-                                              child: OutlinedButton.icon(
-                                                onPressed: () {
-                                                  Navigator.pushNamed(
-                                                    context,
-                                                    '/tracking',
-                                                    arguments: parcel.trackingNumber,
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.visibility, size: 16),
-                                                label: const Text('Details'),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: OutlinedButton.icon(
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) => QRDisplayScreen(parcel: parcel),
-                                                    ),
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.qr_code, size: 16),
-                                                label: const Text('QR Code'),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        // Payment action button (only for pending payments)
-                                        if (parcel.paymentStatus == 'pending') ...[
-                                          const SizedBox(height: 8),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: ElevatedButton.icon(
-                                              onPressed: () => _markPaymentAsPaid(parcel),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                foregroundColor: Colors.white,
-                                              ),
-                                              icon: const Icon(Icons.payment, size: 16),
-                                              label: const Text('Mark as Paid'),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
+                        ),
+                      )
+                    : _filteredParcels.isEmpty
+                        ? Container(
+                            padding: const EdgeInsets.all(40),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inbox_outlined,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No parcels found',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                );
-                              },
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Try adjusting your search criteria',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-            ),
-          ],
-        ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: _filteredParcels.length,
+                            itemBuilder: (context, index) {
+                              final parcel = _filteredParcels[index];
+                              final allowedStatuses = getAllowedStatuses(parcel.status);
+
+                              return _buildModernParcelCard(parcel, allowedStatuses, theme);
+                            },
+                          ),
+          ),
+        ],
       ),
     );
   }
@@ -589,6 +518,375 @@ class _ParcelListScreenState extends State<ParcelListScreen> {
       case 'Cancelled':
       default:
         return [];
+    }
+  }
+
+  Widget _buildModernParcelCard(Parcel parcel, List<String> allowedStatuses, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with tracking number and status
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.local_shipping,
+                    color: theme.primaryColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tracking #${parcel.trackingNumber}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.primaryColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Created ${_formatDate(parcel.createdAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusChip(parcel.status, theme),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Route Information
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.my_location, color: Colors.green.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          parcel.fromLocation,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 2,
+                        height: 20,
+                        color: Colors.grey.shade400,
+                        margin: const EdgeInsets.only(left: 9),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.red.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          parcel.toLocation,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Details Grid
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailItem(
+                    'Receiver',
+                    parcel.receiverName,
+                    Icons.person_outline,
+                    theme,
+                  ),
+                ),
+                Expanded(
+                  child: _buildDetailItem(
+                    'Amount',
+                    'TZS ${parcel.amount.toStringAsFixed(2)}',
+                    Icons.attach_money,
+                    theme,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Payment Status
+            Row(
+              children: [
+                Icon(Icons.payment, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  'Payment: ',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Color(PaymentService().getPaymentStatusColor(parcel.paymentStatus)).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      PaymentService().getPaymentStatusDisplayName(parcel.paymentStatus),
+                      style: TextStyle(
+                        color: Color(PaymentService().getPaymentStatusColor(parcel.paymentStatus)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Action Buttons
+            Column(
+              children: [
+                if (allowedStatuses.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButton<String>(
+                      value: _selectedStatuses[parcel.id] ?? parcel.status,
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      items: [
+                        DropdownMenuItem(
+                          value: parcel.status,
+                          child: Text(parcel.status),
+                        ),
+                        ...allowedStatuses.map((status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status),
+                            )),
+                      ].toList(),
+                      onChanged: (newValue) {
+                        if (newValue != null && newValue != parcel.status) {
+                          _updateParcelStatus(parcel, newValue);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/tracking',
+                            arguments: parcel.trackingNumber,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.visibility, size: 16),
+                        label: const Text('Details'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QRDisplayScreen(parcel: parcel),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.qr_code, size: 16),
+                        label: const Text('QR Code'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // Payment action button (only for pending payments)
+            if (parcel.paymentStatus == 'pending') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _markPaymentAsPaid(parcel),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.payment, size: 16),
+                  label: const Text('Mark as Paid'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status, ThemeData theme) {
+    Color color;
+    switch (status) {
+      case 'Delivered':
+        color = Colors.green;
+        break;
+      case 'In Transit':
+        color = Colors.blue;
+        break;
+      case 'Cancelled':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.orange;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value, IconData icon, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else {
+        return DateFormat('MMM dd, yyyy').format(date);
+      }
+    } catch (e) {
+      return 'Unknown';
     }
   }
 }

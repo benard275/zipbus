@@ -254,6 +254,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
@@ -289,6 +290,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                       child: Text(
                         '${parcel.fromLocation} → ${parcel.toLocation}',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -304,6 +306,7 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                       child: Text(
                         '${parcel.receiverName} (${parcel.receiverPhone})',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -344,6 +347,8 @@ class _DeliveryScheduleScreenState extends State<DeliveryScheduleScreen> {
                               fontSize: 12,
                               color: Colors.amber.shade700,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
                         ),
                       ],

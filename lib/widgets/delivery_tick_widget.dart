@@ -18,9 +18,8 @@ class DeliveryTickWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final defaultSentColor = sentColor ?? Colors.grey[400]!;
-    final defaultDeliveredColor = deliveredColor ?? Colors.grey[400]!;
+    final defaultSentColor = sentColor ?? Colors.grey.shade400;
+    final defaultDeliveredColor = deliveredColor ?? Colors.grey.shade400;
     final defaultReadColor = readColor ?? Colors.blue;
 
     return SizedBox(
@@ -155,7 +154,6 @@ class _AnimatedDeliveryTickWidgetState extends State<AnimatedDeliveryTickWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  String _previousStatus = '';
 
   @override
   void initState() {
@@ -171,7 +169,6 @@ class _AnimatedDeliveryTickWidgetState extends State<AnimatedDeliveryTickWidget>
       parent: _animationController,
       curve: Curves.elasticOut,
     ));
-    _previousStatus = widget.deliveryStatus;
   }
 
   @override
@@ -181,7 +178,6 @@ class _AnimatedDeliveryTickWidgetState extends State<AnimatedDeliveryTickWidget>
       _animationController.forward().then((_) {
         _animationController.reverse();
       });
-      _previousStatus = widget.deliveryStatus;
     }
   }
 
@@ -227,21 +223,19 @@ String getDeliveryStatusText(String deliveryStatus) {
 
 /// Helper function to get appropriate tick color based on theme
 Color getTickColor(BuildContext context, String deliveryStatus, {bool isMyMessage = true}) {
-  final theme = Theme.of(context);
-  
   if (!isMyMessage) {
     // For received messages, don't show delivery status
     return Colors.transparent;
   }
-  
+
   switch (deliveryStatus) {
     case 'sent':
-      return Colors.grey[400]!;
+      return Colors.grey.shade400;
     case 'delivered':
-      return Colors.grey[400]!;
+      return Colors.grey.shade400;
     case 'read':
       return Colors.blue;
     default:
-      return Colors.grey[400]!;
+      return Colors.grey.shade400;
   }
 }

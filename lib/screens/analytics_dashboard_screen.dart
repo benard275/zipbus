@@ -171,6 +171,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                     child: Text(
                       'Filtered: ${_startDate != null ? DateFormat('MMM dd, yyyy').format(_startDate!) : 'Start'} - ${_endDate != null ? DateFormat('MMM dd, yyyy').format(_endDate!) : 'End'}',
                       style: TextStyle(color: Colors.blue.shade700),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -211,9 +212,9 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 1.2,
           children: [
             _buildMetricCard(
               'Total Parcels',
@@ -286,6 +287,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               title,
@@ -293,6 +295,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                 fontSize: 12,
                 color: Colors.grey.shade600,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ],
         ),
@@ -482,23 +486,26 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       Text(
                         'Delivery Rate: ${_deliveryPerformance!['deliveryRate'].toStringAsFixed(1)}%',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Avg. Delivery Time: ${_deliveryPerformance!['averageDeliveryTime'].toStringAsFixed(1)} hours',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'On-time Deliveries: ${_deliveryPerformance!['onTimeDeliveries']}/${_deliveryPerformance!['totalDeliveries']}',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Card(
                 child: Padding(
@@ -530,11 +537,13 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                       Text(
                         'Mobile Money: TZS ${_paymentAnalytics!['mobileMoneyRevenue'].toStringAsFixed(0)}',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Cash: TZS ${_paymentAnalytics!['cashRevenue'].toStringAsFixed(0)}',
                         style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -573,6 +582,7 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
                         child: Text(
                           entry.key,
                           style: const TextStyle(fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(
